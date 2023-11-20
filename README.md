@@ -1,0 +1,1 @@
+# esp32_arduinoide_class
