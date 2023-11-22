@@ -1,0 +1,28 @@
+To connect to wifi from esp32 using wifi.h
+	include <wifi.h>
+	create a const to add ssid and network password
+		const char* ssid = "****"
+		const char* password = "*****"
+	Set the wifi mode you would like the esp32 to work on, such as station. access point and station access point
+		WiFi.mode(WIFI_AP_STA);  //Optional
+	Begin the connection with 
+		 WiFi.begin(ssid, password);
+	Check for a successful connection to the network
+		while (WiFi.status() != WL_CONNECTED) {
+    			Serial.print("..");
+    			delay(100);
+  		}
+
+	To get the local IP address 
+		WiFi.localIP()
+
+To use an ultrasonic sensor to get distance
+	Declare two GPIO pins, trigger pin, and echo pin
+	Trigger pin as output and echo pin for input
+		pinMode(trigPin, OUTPUT);  // Sets the trigPin as an Output
+  		pinMode(echoPin, INPUT);   // Sets the echoPin as an Input
+	To measure the distance 
+		distance in cm = duration * sound_speed /2
+		duration is the time it takes the ultrasonic sound to travel from the transmitter to the object and back 
+		to the receiver 
+		The sound speed is 0.034

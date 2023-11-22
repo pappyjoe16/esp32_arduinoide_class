@@ -2,7 +2,8 @@
 #include <Arduino_JSON.h>
 #include <NTPClient.h>
 #include <WiFiUdp.h>
-#include "math.h"
+#include <HTTPClient.h>
+
 
 //Assign Sensors pin
 const int trigPin = 5;
@@ -19,6 +20,15 @@ const char* password = "@12345678";
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 3600, 60000);
 
+// Domain Name with full URL Path for HTTP POST Request
+const char* serverName = "http://api.thingspeak.com/update";
+// Service API Key
+String apiKey = "3I4TOFFU4D84CKPM";
+
+unsigned long lastTime = 0;
+
+unsigned long timerDelay = 10000;
+
 //define sound speed in cm/uS
 #define SOUND_SPEED 0.0343
 //#define CM_TO_INCH 0.393701
@@ -30,6 +40,7 @@ float distanceInch;
 String formattedDate;
 String dayStamp;
 String timeStamp;
+String httpRequestData;
 
 //create ajson object to hold data keys and value
 JSONVar DataObject;
@@ -49,7 +60,9 @@ void setup() {
   Serial.print("Distance (cm): ");
   Serial.println(String(measure_distance_cm()) + " cm");  //get measurement in cm
 
-  DataObjectCreation(); //assign data value to data key
+  DataObjectCreation();  //assign data value to data key
+
+  //sendData();
 }
 
 void loop() {
@@ -63,7 +76,7 @@ void wifi_connect() {
   WiFi.begin(ssid, password);
   Serial.println("\nConnecting");
 
- //waiting for connection to be established
+  //waiting for connection to be established
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print("..");
     delay(100);
@@ -93,18 +106,26 @@ float measure_distance_cm() {
   return distanceCm;
 }
 
-//Function that Prepare Data to send 
+//Function that Prepare Data to send
 void DataObjectCreation() {
   //setting json key and value
+  DataObject["api_key"] = (apiKey);
   DataObject["Device_macAddress"] = "12:bc:3c:58";
-  DataObject["TimeStamp"] =  getTimeDateStamp();
+  DataObject["TimeStamp"] = getTimeDateStamp();
   DataObject["RFID_number"] = "0x7ce35f9";
   DataObject["BinStatus"] = (distanceCm);
   DataObject["BinID"] = "0001-AAA";
 
- // convert the Json object to string
+  // DataObject["api_key"] = (apiKey);
+  // DataObject["field1"] = "12:bc:3c:58";
+  // DataObject["field2"] = "0x7ce35f9";
+  // DataObject["field3"] = (distanceCm);
+  // DataObject["field4"] = "0001-AAA";
+  // DataObject["field5"] = getTimeDateStamp();
+  // convert the Json object to string
   String jsonDataString = JSON.stringify(DataObject);
   Serial.println(jsonDataString);
+  httpRequestData = jsonDataString;
 }
 
 //Function to get date and time
@@ -121,9 +142,27 @@ String getTimeDateStamp() {
   dayStamp = formattedDate.substring(0, splitT);
   Serial.println(dayStamp);
   // Extract time
-  timeStamp = formattedDate.substring(splitT+1, formattedDate.length()-1);
+  timeStamp = formattedDate.substring(splitT + 1, formattedDate.length() - 1);
   Serial.println(timeStamp);
   delay(1000);
-  
+
   return formattedDate;
+}
+
+void sendData() {
+  //Check WiFi connection status
+  if (WiFi.status() == WL_CONNECTED) {
+    WiFiClient client;
+    HTTPClient http;
+    // Your Domain name with URL path or IP address with path
+    http.begin(client, serverName);
+
+    http.addHeader("Content-Type", "application/json");
+    // JSON data to send with HTTP POST
+
+    // Send HTTP POST request
+    int httpResponseCode = http.POST(httpRequestData);
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+  }
 }
